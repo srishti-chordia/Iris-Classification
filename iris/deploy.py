@@ -1,23 +1,37 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, render_template
 import pickle
+import numpy as np
 
 app = Flask(__name__)
-#load the model
-model = pickle.load(open('saved_model.sav','rb'))
+
+# Load your pre-trained model
+model = pickle.load(open("saved_model1.pkl", "rb"))
 
 
-@app.route('/predict', methods=['POST','GET'])
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+@app.route("/predict", methods=["POST"])
 def predict():
-    sepal_length = float(request.form['SepalLengthCm'])
-    sepal_width = float(request.form['SepalWidthCm'])
-    petal_length = float(request.form['PetalLengthCm'])
-    petal_width = float(request.form['PetalWidthCm'])
-    result = model.predict([[sepal_length, sepal_width, petal_length, petal_width]])
+    try:
+        # Extract features from form input
+        int_features = [float(x) for x in request.form.values()]
+        final_features = [np.array(int_features)]
 
-    
-@app.route('/')
-def about():
-    return render_template('predict.html', result='')
+        # Make prediction using the loaded model
+        prediction = model.predict(final_features)
+        output = prediction[0]
 
-if __name__ == '__main__':
+        # Render the result
+        return render_template(
+            "index.html", prediction_text="Predicted Class: {}".format(output)
+        )
+    except Exception as e:
+        # In case of error, return an error message
+        return render_template("index.html", prediction_text="Error: {}".format(e))
+
+
+if __name__ == "__main__":
     app.run(debug=True)
